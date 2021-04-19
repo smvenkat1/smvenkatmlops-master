@@ -9,13 +9,12 @@ import joblib
 def split_data(data_df):
     """Split a dataframe into training and validation datasets"""
     
-    ## TODO
-    features = data_df.drop(['target', 'id'], axis = 1)
+    features = data_df.drop(['target', 'id'], axis = 1) # NOQA: E251
     labels = np.array(data_df['target'])
-    features_train, features_valid, labels_train, labels_valid = train_test_split(features, labels, test_size=0.2, random_state=0)
+    features_train, features_valid, labels_train, labels_valid = train_test_split(features, labels, test_size=0.2, random_state=0) # NOQA: E501
 
     train_data = lightgbm.Dataset(features_train, label=labels_train)
-    valid_data = lightgbm.Dataset(features_valid, label=labels_valid, free_raw_data=False)
+    valid_data = lightgbm.Dataset(features_valid, label=labels_valid, free_raw_data=False) # NOQA: E501
     return (train_data, valid_data)
 
 
@@ -24,7 +23,7 @@ def train_model(data, parameters):
     # The object returned by split_data is a tuple.
     # Access train_data with data[0] and valid_data with data[1]
     
-    ## TODO
+
     train_data = data[0]
     valid_data = data[1]
     
@@ -39,7 +38,7 @@ def train_model(data, parameters):
 def get_model_metrics(model, data):
     """Construct a dictionary of metrics for the model"""
     
-    train_data = data[0]
+    train_data = data[0] # NOQA: F841
     valid_data = data[1]
     
     ## TODO
@@ -84,3 +83,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

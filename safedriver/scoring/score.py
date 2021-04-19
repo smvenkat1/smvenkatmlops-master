@@ -31,22 +31,19 @@ import joblib
 def init():
     print("inside scoring init function")
 
-
-    ## Start - Added DEBUG SCRIPT -- venkat
-
+    # Start of Debug script - Venkat
     import logging
     logging.basicConfig(level=logging.DEBUG)
     print("Debugging Model Path")
     print(Model.get_model_path(model_name='smitha-driver-model'))
-
-    ## End - Added DEBUG SCRIPT -- venkat
+    # End of Debug Script - Venkat
 
     global LGBM_MODEL
     print("After global Lgbm model")
     # Load the model from file into a global object
     model_path = Model.get_model_path(
         model_name="smitha-driver-model")
-    #model_path="aml://asset/511cfeb79c8440d3a4136defccb20418"
+    #model_path="aml://asset/511cfeb79c8440d3a4136defccb20418" # NOQA: E265
     print("Model path loaded")
     LGBM_MODEL = joblib.load(model_path)
     print("LGBM_MODel is loaded with modelpath")
