@@ -6,15 +6,14 @@ from sklearn.model_selection import train_test_split
 import lightgbm
 import joblib
 
-def split_data(data_df):
+def split_data(data_df): # NOQA: E302, E261
     """Split a dataframe into training and validation datasets"""
-    
-    features = data_df.drop(['target', 'id'], axis = 1) # NOQA: E251
+    features = data_df.drop(['target', 'id'], axis = 1) # NOQA: E251, E261
     labels = np.array(data_df['target'])
-    features_train, features_valid, labels_train, labels_valid = train_test_split(features, labels, test_size=0.2, random_state=0) # NOQA: E501
+    features_train, features_valid, labels_train, labels_valid = train_test_split(features, labels, test_size=0.2, random_state=0) # NOQA: E501, E261
 
     train_data = lightgbm.Dataset(features_train, label=labels_train)
-    valid_data = lightgbm.Dataset(features_valid, label=labels_valid, free_raw_data=False) # NOQA: E501
+    valid_data = lightgbm.Dataset(features_valid, label=labels_valid, free_raw_data=False) # NOQA: E501, E261
     return (train_data, valid_data)
 
 
@@ -22,11 +21,8 @@ def train_model(data, parameters):
     """Train a model with the given datasets and parameters"""
     # The object returned by split_data is a tuple.
     # Access train_data with data[0] and valid_data with data[1]
-    
-
     train_data = data[0]
     valid_data = data[1]
-    
     model = lightgbm.train(parameters,
                            train_data,
                            valid_sets=valid_data,
@@ -37,11 +33,8 @@ def train_model(data, parameters):
 
 def get_model_metrics(model, data):
     """Construct a dictionary of metrics for the model"""
-    
-    train_data = data[0] # NOQA: F841
+    train_data = data[0] # NOQA: F841, E261
     valid_data = data[1]
-    
-    ## TODO
     predictions = model.predict(valid_data.data)
     fpr, tpr, thresholds = metrics.roc_curve(valid_data.label, predictions)
     model_metrics = {"auc": (metrics.auc(fpr, tpr))}
@@ -50,7 +43,6 @@ def get_model_metrics(model, data):
 
 def main():
     """This method invokes the training functions for development purposes"""
-    
     # Read data from a file
     data_df = pd.read_csv('porto_seguro_safe_driver_prediction_input.csv')
 
@@ -68,11 +60,9 @@ def main():
     }
 
     # Call the functions defined in this file
-    ## TODO
     data = split_data(data_df)
     model = train_model(data, parameters)
     # Print the resulting metrics for the model
-    ## TODO
     get_model_metrics(model, data)
 
     output_folder = "output"
@@ -81,6 +71,6 @@ def main():
     print(output_path)
     joblib.dump(value=model, filename=output_path)
 
+
 if __name__ == '__main__':
     main()
-

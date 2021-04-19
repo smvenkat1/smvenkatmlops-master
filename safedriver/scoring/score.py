@@ -28,7 +28,7 @@ import numpy
 from azureml.core.model import Model
 import joblib
 
-def init():
+def init(): # NOQA: E302, E261
     print("inside scoring init function")
 
     # Start of Debug script - Venkat
