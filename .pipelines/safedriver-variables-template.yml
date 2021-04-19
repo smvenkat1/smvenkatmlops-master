@@ -24,8 +24,8 @@ variables:
   - name: DATASET_NAME
     value: safedriverdataset
   # Uncomment DATASTORE_NAME if you have configured non default datastore to point to your data
-  # - name: DATASTORE_NAME
-  #   value: datablobstore
+  - name: DATASTORE_NAME
+    value: workspaceblobstore
   - name: DATASET_VERSION
     value: latest
   - name: TRAINING_PIPELINE_NAME
