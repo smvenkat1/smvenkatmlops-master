@@ -25,8 +25,7 @@ POSSIBILITY OF SUCH DAMAGE.
 """
 import json
 import numpy
-import os
-#from azureml.core.model import Model # NOQA: E265
+from azureml.core.model import Model  # NOQA: E265
 import joblib
 
 def init(): # NOQA: E302, E261
@@ -34,9 +33,8 @@ def init(): # NOQA: E302, E261
     global LGBM_MODEL
     print("After global Lgbm model")
     # Load the model from file into a global object
-    #model_path = Model.get_model_path( # NOQA: E265
-    #    model_name="smitha-driver-model")
-    model_path = os.path.join(os.getenv('AZUREML_MODEL_DIR'), 'smitha-driver-model') # NOQA: E501, E261
+    model_path = Model.get_model_path(
+        model_name="safedriver_model")
     print("Model path loaded")
     LGBM_MODEL = joblib.load(model_path)
     print("LGBM_MODel is loaded with modelpath")
