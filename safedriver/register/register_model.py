@@ -70,7 +70,7 @@ def main():
         "--model_name",
         type=str,
         help="Name of the Model",
-        default="safedriver_model.pkl",
+        default="safedriver_model",
     )
 
     parser.add_argument(
