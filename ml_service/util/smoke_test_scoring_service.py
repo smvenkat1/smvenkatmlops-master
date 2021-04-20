@@ -5,7 +5,8 @@ from azureml.core import Workspace
 from azureml.core.webservice import AksWebservice, AciWebservice
 from ml_service.util.env_variables import Env
 import secrets
-
+import json
+import numpy
 
 #input = {"data": { # NOQA: E265
 #        'id': [0, 1, 2, 3, 4],
@@ -14,7 +15,7 @@ import secrets
 #        'col2': [2, 1, 1, 2, 1]}
 #        }
 
-input = '{"data":[[0,1,8,1,0,0,1,0,0,0,0,0,0,0,12,1,0,0,0.5,0.3,0.610327781,7,1,-1,0,-1,1,1,1,2,1,65,1,0.316227766,0.669556409,0.352136337,3.464101615,0.1,0.8,0.6,1,1,6,3,6,2,9,1,1,1,12,0,1,1,0,0,1],[4,2,5,1,0,0,0,0,1,0,0,0,0,0,5,1,0,0,0.9,0.5,0.771362431,4,1,-1,0,0,11,1,1,0,1,103,1,0.316227766,0.60632002,0.358329457,2.828427125,0.4,0.5,0.4,3,3,8,4,10,2,7,2,0,3,10,0,0,1,1,0,1]]}'  # NOQA: E501
+raw_data = '{"data":[[0,1,8,1,0,0,1,0,0,0,0,0,0,0,12,1,0,0,0.5,0.3,0.610327781,7,1,-1,0,-1,1,1,1,2,1,65,1,0.316227766,0.669556409,0.352136337,3.464101615,0.1,0.8,0.6,1,1,6,3,6,2,9,1,1,1,12,0,1,1,0,0,1],[4,2,5,1,0,0,0,0,1,0,0,0,0,0,5,1,0,0,0.9,0.5,0.771362431,4,1,-1,0,0,11,1,1,0,1,103,1,0.316227766,0.60632002,0.358329457,2.828427125,0.4,0.5,0.4,3,3,8,4,10,2,7,2,0,3,10,0,0,1,1,0,1]]}'  # NOQA: E501
 
 output_len = 2
 
@@ -51,6 +52,8 @@ def call_web_app(url, headers):
     retries = 600
     for i in range(retries):
         try:
+            data = json.loads(raw_data)["data"]
+            input = numpy.array(data)
             response = requests.post(
                 url, json=input, headers=headers)
             response.raise_for_status()
