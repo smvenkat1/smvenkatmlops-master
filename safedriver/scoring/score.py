@@ -34,7 +34,7 @@ def init(): # NOQA: E302, E261
     print("After global Lgbm model")
     # Load the model from file into a global object
     model_path = Model.get_model_path(
-        model_name="safedriver_model")
+        model_name="safedriver_model.pkl")
     print("Model path loaded")
     LGBM_MODEL = joblib.load(model_path)
     print("LGBM_MODel is loaded with modelpath")
