@@ -1,4 +1,4 @@
-"""
+""" # NOQA: E902
 Copyright (C) Microsoft Corporation. All rights reserved.​
  ​
 Microsoft Corporation (“Microsoft”) grants you a nonexclusive, perpetual,
@@ -25,7 +25,8 @@ POSSIBILITY OF SUCH DAMAGE.
 """
 import json
 import numpy
-from azureml.core.model import Model
+import os
+#from azureml.core.model import Model # NOQA: E265
 import joblib
 
 def init(): # NOQA: E302, E261
@@ -35,14 +36,18 @@ def init(): # NOQA: E302, E261
     import logging
     logging.basicConfig(level=logging.DEBUG)
     print("Debugging Model Path")
-    print(Model.get_model_path(model_name='smitha-driver-model'))
+    #print(Model.get_model_path(model_name='smitha-driver-model')) # NOQA: E265
+    print(os.path.join(os.getenv('AZUREML_MODEL_DIR'), 'smitha-driver-model')
+
     # End of Debug Script - Venkat
 
     global LGBM_MODEL
     print("After global Lgbm model")
     # Load the model from file into a global object
-    model_path = Model.get_model_path(
-        model_name="smitha-driver-model")
+    #model_path = Model.get_model_path(
+    #    model_name="smitha-driver-model")
+    model_path = os.path.join(os.getenv('AZUREML_MODEL_DIR'), 'smitha-driver-model') # NOQA: E501
+
     #model_path="aml://asset/511cfeb79c8440d3a4136defccb20418" # NOQA: E265
     print("Model path loaded")
     LGBM_MODEL = joblib.load(model_path)
