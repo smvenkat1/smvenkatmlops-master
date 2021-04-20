@@ -31,24 +31,12 @@ import joblib
 
 def init(): # NOQA: E302, E261
     print("inside scoring init function")
-
-    # Start of Debug script - Venkat
-    import logging
-    logging.basicConfig(level=logging.DEBUG)
-    print("Debugging Model Path")
-    #print(Model.get_model_path(model_name='smitha-driver-model')) # NOQA: E265
-    print(os.path.join(os.getenv('AZUREML_MODEL_DIR'), 'smitha-driver-model')
-
-    # End of Debug Script - Venkat
-
     global LGBM_MODEL
     print("After global Lgbm model")
     # Load the model from file into a global object
-    #model_path = Model.get_model_path(
+    #model_path = Model.get_model_path( # NOQA: E265
     #    model_name="smitha-driver-model")
-    model_path = os.path.join(os.getenv('AZUREML_MODEL_DIR'), 'smitha-driver-model') # NOQA: E501
-
-    #model_path="aml://asset/511cfeb79c8440d3a4136defccb20418" # NOQA: E265
+    model_path = os.path.join(os.getenv('AZUREML_MODEL_DIR'), 'smitha-driver-model') # NOQA: E501, E261
     print("Model path loaded")
     LGBM_MODEL = joblib.load(model_path)
     print("LGBM_MODel is loaded with modelpath")
