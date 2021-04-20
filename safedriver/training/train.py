@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import f1_score
 import lightgbm
 import joblib
 
@@ -37,7 +39,9 @@ def get_model_metrics(model, data):
     valid_data = data[1]
     predictions = model.predict(valid_data.data)
     fpr, tpr, thresholds = metrics.roc_curve(valid_data.label, predictions)
+    mse = mean_squared_error(predictions, valid_data.label)
     model_metrics = {"auc": (metrics.auc(fpr, tpr))}
+    model_metrics = {"mse": mse}
     return model_metrics
 
 
