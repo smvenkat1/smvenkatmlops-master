@@ -2,7 +2,7 @@ pr: none
 trigger: none
 
 variables:
-- group: devopsforai-aml-vg
+- group: devopsforai-aml-vg-qa
 - name: INPUT_CONTAINER_NAME
   value: 'inputdata'
 - name: TRAINING_CONTAINER_NAME
