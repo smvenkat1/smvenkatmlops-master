@@ -2,7 +2,7 @@ pr: none
 trigger: none
 
 variables:
-- group: devopsforai-aml-vg
+- group: devopsforai-aml-vg - qa
 
 stages:
 - stage: 'Dev'
