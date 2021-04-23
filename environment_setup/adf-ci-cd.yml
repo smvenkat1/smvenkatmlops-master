@@ -1,9 +1,22 @@
+pr: none
+trigger: none
+
 variables:
 - group: devopsforai-aml-vg - qa
+- name: INPUT_CONTAINER_NAME
+  value: 'inputdata'
+- name: TRAINING_CONTAINER_NAME
+  value: 'trainingdata'
+- name: TESTING_CONTAINER_NAME
+  value: 'testingdata'
+- name: MNT_PREFIX
+  value: '/mnt/'
+- name: STORAGE_ACCOUNT_POSTFIX
+  value: 'amlsa'
 
 stages:
-- stage: 'CI'
-  displayName: 'CI'
+- stage: CI
+  displayName: "CI"
   jobs:
   - job: "CI_Job"
     displayName: "CI Job"
@@ -11,89 +24,75 @@ stages:
       vmImage: 'ubuntu-latest'
     timeoutInMinutes: 0
     steps:
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '3.x'
-        addToPath: true
-        architecture: 'x64'
-      displayName: 'Use Python3'
-    - script: pip install --upgrade flake8 flake8_formatter_junit_xml
-      displayName: 'Install flake8'
-    - checkout: self
-    - script: |
-       flake8 --output-file=$(Build.BinariesDirectory)/lint-testresults.xml --format junit-xml  
-    workingDirectory: '$(Build.SourcesDirectory)/dataingestion'
-    displayName: 'Run flake8 (code style analysis)'  
-    - script: |
-       python -m pytest --junitxml=$(Build.BinariesDirectory)/unit-testresults.xml $(Build.SourcesDirectory)
-    displayName: 'Run unit tests'
-    - task: PublishTestResults@2
-    condition: succeededOrFailed()
-    inputs:
-        testResultsFiles: '$(Build.BinariesDirectory)/*-testresults.xml'
-        testRunTitle: 'Linting & Unit tests'
-        failTaskOnFailedTests: true
-    displayName: 'Publish linting and unit test results'    
+      - task: UsePythonVersion@0
+        inputs:
+         versionSpec: '3.x'
+         addToPath: true
+         architecture: x64
+        displayName: 'Use Python3'
+      - script: pip install --upgrade flake8 flake8_formatter_junit_xml
+        displayName: 'Install flake8'
+      - checkout: self
+      - script: | 
+          flake8 --output-file=$(Build.BinariesDirectory)/lint-testresults.xml --format junit-xml
+        workingDirectory: '$(Build.SourcesDirectory)/dataingestion'
+        displayName: 'Run flake8 (code style analysis)'
+      - task: PublishTestResults@2
+        condition: succeededOrFailed()
+        inputs:
+            testResultsFiles: '$(Build.BinariesDirectory)/*-testresults.xml'
+            testRunTitle: 'Linting & Unit tests'
+            failTaskOnFailedTests: true
+        displayName: 'Publish linting and unit test results'
 
-    # The CI stage produces two artifacts (notebooks and ADF pipelines).
-    # The pipelines Azure Resource Manager templates are stored in a technical branch "adf_publish"
-    - publish: $(Build.SourcesDirectory)/$(Build.Repository.Name)/code/dataingestion
-      artifact: di-notebooks
-    - checkout: git://${{variables['System.TeamProject']}}@adf_publish    
-    - publish: $(Build.SourcesDirectory)/$(Build.Repository.Name)/devops-ds-adf
-      artifact: adf-pipelines
 
 - stage: 'Deploy_to_QA'
   displayName: 'Deploy to QA'
-  variables:
-  - group: devops-ds-qa-vg
+  
   jobs:
-  - deployment: "Deploy_to_Databricks"
-    displayName: 'Deploy to Databricks'
+  - job: "Deploy_to_databricks"
+    displayName: "Deploy to DataBricks"
     timeoutInMinutes: 0
-    environment: qa
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-            - task: UsePythonVersion@0
-              inputs:
-                versionSpec: '3.x'
-                addToPath: true
-                architecture: 'x64'
-              displayName: 'Use Python3'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: UsePythonVersion@0
+      displayName: 'Use Python 3.x'
 
-            - task: configuredatabricks@0
-              inputs:
-                url: '$(DATABRICKS_URL)'
-                token: '$(DATABRICKS_TOKEN)'
-              displayName: 'Configure Databricks CLI'    
+    - bash: |
+        python -m pip install --upgrade pip 
+        python -m pip install -r $(Build.SourcesDirectory)/environment_setup/dbricks_requirements.txt
+      displayName: 'Install Packages'
 
-            - task: deploynotebooks@0
-              inputs:
-                notebooksFolderPath: '$(Pipeline.Workspace)/di-notebooks'
-                workspaceFolder: '/Shared/devops-ds'
-              displayName: 'Deploy (copy) data processing notebook to the Databricks cluster'             
-  - deployment: "Deploy_to_ADF"
-    displayName: 'Deploy to ADF'
+    - task: configuredatabricks@0
+      inputs:
+        url: 'https://$(LOCATION).azuredatabricks.net'
+        token: '$(DATABRICKS_ACCESS_TOKEN)'
+      displayName: 'Configure Databricks CLI'    
+
+    - task: deploynotebooks@0
+      inputs:
+        notebooksFolderPath: '$(Build.SourcesDirectory)/adf/utils/notebooks'
+        workspaceFolder: '/Shared/devops-ds'
+      displayName: 'Deploy (copy) mount containers notebook to the Databricks cluster'
+  - job: "Deploy_to_adfs"
+    displayName: "Deploy to ADFS"
+    pool:
+      vmImage: 'ubuntu-latest'
     timeoutInMinutes: 0
-    environment: qa
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-            - task: AzureResourceGroupDeployment@2
-              displayName: 'Deploy ADF resources'
-              inputs:
-                azureSubscription: $(AZURE_RM_CONNECTION)
-                resourceGroupName: $(RESOURCE_GROUP)
-                location: $(LOCATION)
-                csmFile: '$(Pipeline.Workspace)/adf-pipelines/ARMTemplateForFactory.json'
-                csmParametersFile: '$(Pipeline.Workspace)/adf-pipelines/ARMTemplateParametersForFactory.json'
-                overrideParameters: -data-ingestion-pipeline_properties_variables_data_file_name_defaultValue "$(DATA_FILE_NAME)"
+    steps:
+    - task: AzureResourceGroupDeployment@2
+      displayName: 'Deploy ADF resources'
+      inputs:
+        azureSubscription: '$(AZURE_RM_SVC_CONNECTION)'
+        resourceGroupName: $(RESOURCE_GROUP)
+        location: $(LOCATION)
+        csmFile: '$(Build.SourcesDirectory)/adf/arm-template/arm_template.json'
+        csmParametersFile: '$(Build.SourcesDirectory)/adf/arm-template/arm_template_parameters.json'
+        overrideParameters: -factoryName "$(DATA_FACTORY_NAME)"
   - job: "Integration_test_job"
     displayName: "Integration test job"
-    dependsOn: [Deploy_to_Databricks, Deploy_to_ADF]
+    dependsOn: [Deploy_to_Databricks, Deploy_to_adfs]
     pool:
       vmImage: 'ubuntu-latest'
     timeoutInMinutes: 0
@@ -101,7 +100,7 @@ stages:
     - task: AzurePowerShell@4
       displayName: 'Execute ADF Pipeline'
       inputs:
-        azureSubscription: $(AZURE_RM_CONNECTION)
+        azureSubscription: $(AZURE_RM_SVC_CONNECTION)
         ScriptPath: '$(Build.SourcesDirectory)/adf/utils/Invoke-ADFPipeline.ps1'
         ScriptArguments: '-ResourceGroupName $(RESOURCE_GROUP) -DataFactoryName $(DATA_FACTORY_NAME) -PipelineName $(PIPELINE_NAME)'
         azurePowerShellVersion: LatestVersion
@@ -114,16 +113,19 @@ stages:
 
     - task: configuredatabricks@0
       inputs:
-        url: '$(DATABRICKS_URL)'
-        token: '$(DATABRICKS_TOKEN)'
+        url: 'https://$(LOCATION).azuredatabricks.net'
+        token: '$(DATABRICKS_ACCESS_TOKEN)'
       displayName: 'Configure Databricks CLI'    
 
     - task: executenotebook@0
       inputs:
         notebookPath: '/Shared/devops-ds/test-data-ingestion'
         existingClusterId: '$(DATABRICKS_CLUSTER_ID)'
-        executionParams: '{"bin_file_name":"$(bin_FILE_NAME)"}'
+        executionParams: '{"storage_account_name":"$(BASE_NAME)$(STORAGE_ACCOUNT_POSTFIX)", "storage_account_key":"$(STORAGE_ACCOUNT_KEY)",
+                          "input_container_name":"$(INPUT_CONTAINER_NAME)", "input_mount_point_name":"$(MNT_PREFIX)$(INPUT_CONTAINER_NAME)",
+                          "training_container_name":"$(TRAINING_CONTAINER_NAME)", "training_mount_point_name":"$(MNT_PREFIX)$(TRAINING_CONTAINER_NAME)",
+                          "testing_container_name":"$(TESTING_CONTAINER_NAME)", "testing_mount_point_name":"$(MNT_PREFIX)$(TESTING_CONTAINER_NAME)"}'
       displayName: 'Test data ingestion'
 
     - task: waitexecution@0
-      displayName: 'Wait until the testing is done'
+      displayName: 'Wait until the testing is done'   
