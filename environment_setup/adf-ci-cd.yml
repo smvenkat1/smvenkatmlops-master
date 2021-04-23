@@ -1,5 +1,5 @@
 variables:
-- group: devopsforai-aml-vg
+- group: devopsforai-aml-vg - qa
 
 stages:
 - stage: 'CI'
@@ -22,18 +22,18 @@ stages:
     - checkout: self
     - script: |
        flake8 --output-file=$(Build.BinariesDirectory)/lint-testresults.xml --format junit-xml  
-      workingDirectory: '$(Build.SourcesDirectory)/dataingestion'
-      displayName: 'Run flake8 (code style analysis)'  
+    workingDirectory: '$(Build.SourcesDirectory)/dataingestion'
+    displayName: 'Run flake8 (code style analysis)'  
     - script: |
        python -m pytest --junitxml=$(Build.BinariesDirectory)/unit-testresults.xml $(Build.SourcesDirectory)
-      displayName: 'Run unit tests'
+    displayName: 'Run unit tests'
     - task: PublishTestResults@2
     condition: succeededOrFailed()
     inputs:
         testResultsFiles: '$(Build.BinariesDirectory)/*-testresults.xml'
         testRunTitle: 'Linting & Unit tests'
         failTaskOnFailedTests: true
-      displayName: 'Publish linting and unit test results'    
+    displayName: 'Publish linting and unit test results'    
 
     # The CI stage produces two artifacts (notebooks and ADF pipelines).
     # The pipelines Azure Resource Manager templates are stored in a technical branch "adf_publish"
@@ -46,7 +46,7 @@ stages:
 - stage: 'Deploy_to_QA'
   displayName: 'Deploy to QA'
   variables:
-  - group: devopsforai-aml-vg - qa
+  - group: devops-ds-qa-vg
   jobs:
   - deployment: "Deploy_to_Databricks"
     displayName: 'Deploy to Databricks'
