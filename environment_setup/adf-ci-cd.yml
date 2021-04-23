@@ -22,8 +22,8 @@ stages:
     - checkout: self
     - script: |
        flake8 --output-file=$(Build.BinariesDirectory)/lint-testresults.xml --format junit-xml  
-    workingDirectory: '$(Build.SourcesDirectory)/dataingestion'
-    displayName: 'Run flake8 (code style analysis)'  
+      workingDirectory: '$(Build.SourcesDirectory)/dataingestion'
+      displayName: 'Run flake8 (code style analysis)'  
     - script: |
        python -m pytest --junitxml=$(Build.BinariesDirectory)/unit-testresults.xml $(Build.SourcesDirectory)
     displayName: 'Run unit tests'
