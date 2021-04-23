@@ -1,0 +1,24 @@
+{
+	"name": "AMLTrigger",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "data-ingestion-pipeline",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "BlobEventsTrigger",
+		"typeProperties": {
+			"blobPathBeginsWith": "/inputdata/blobs/",
+			"ignoreEmptyBlobs": true,
+			"scope": "/subscriptions/c419db98-c729-48b2-acaf-234182f61153/resourceGroups/MLOpsOH/providers/Microsoft.Storage/storageAccounts/smvmlacramlsa",
+			"events": [
+				"Microsoft.Storage.BlobCreated"
+			]
+		}
+	}
+}
