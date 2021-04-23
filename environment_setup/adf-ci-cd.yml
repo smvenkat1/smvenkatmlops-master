@@ -26,7 +26,7 @@ stages:
       displayName: 'Run flake8 (code style analysis)'  
     - script: |
        python -m pytest --junitxml=$(Build.BinariesDirectory)/unit-testresults.xml $(Build.SourcesDirectory)
-    displayName: 'Run unit tests'
+      displayName: 'Run unit tests'
     - task: PublishTestResults@2
     condition: succeededOrFailed()
     inputs:
