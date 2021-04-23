@@ -1,0 +1,129 @@
+variables:
+- group: devopsforai-aml-vg
+
+stages:
+- stage: 'CI'
+  displayName: 'CI'
+  jobs:
+  - job: "CI_Job"
+    displayName: "CI Job"
+    pool:
+      vmImage: 'ubuntu-latest'
+    timeoutInMinutes: 0
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x'
+        addToPath: true
+        architecture: 'x64'
+      displayName: 'Use Python3'
+    - script: pip install --upgrade flake8 flake8_formatter_junit_xml
+      displayName: 'Install flake8'
+    - checkout: self
+    - script: |
+       flake8 --output-file=$(Build.BinariesDirectory)/lint-testresults.xml --format junit-xml  
+    workingDirectory: '$(Build.SourcesDirectory)'
+    displayName: 'Run flake8 (code style analysis)'  
+    - script: |
+       python -m pytest --junitxml=$(Build.BinariesDirectory)/unit-testresults.xml $(Build.SourcesDirectory)
+    displayName: 'Run unit tests'
+    - task: PublishTestResults@2
+    condition: succeededOrFailed()
+    inputs:
+        testResultsFiles: '$(Build.BinariesDirectory)/*-testresults.xml'
+        testRunTitle: 'Linting & Unit tests'
+        failTaskOnFailedTests: true
+    displayName: 'Publish linting and unit test results'    
+
+    # The CI stage produces two artifacts (notebooks and ADF pipelines).
+    # The pipelines Azure Resource Manager templates are stored in a technical branch "adf_publish"
+    - publish: $(Build.SourcesDirectory)/$(Build.Repository.Name)/code/dataingestion
+      artifact: di-notebooks
+    - checkout: git://${{variables['System.TeamProject']}}@adf_publish    
+    - publish: $(Build.SourcesDirectory)/$(Build.Repository.Name)/devops-ds-adf
+      artifact: adf-pipelines
+
+- stage: 'Deploy_to_QA'
+  displayName: 'Deploy to QA'
+  variables:
+  - group: devopsforai-aml-vg - qa
+  jobs:
+  - deployment: "Deploy_to_Databricks"
+    displayName: 'Deploy to Databricks'
+    timeoutInMinutes: 0
+    environment: qa
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: UsePythonVersion@0
+              inputs:
+                versionSpec: '3.x'
+                addToPath: true
+                architecture: 'x64'
+              displayName: 'Use Python3'
+
+            - task: configuredatabricks@0
+              inputs:
+                url: '$(DATABRICKS_URL)'
+                token: '$(DATABRICKS_TOKEN)'
+              displayName: 'Configure Databricks CLI'    
+
+            - task: deploynotebooks@0
+              inputs:
+                notebooksFolderPath: '$(Pipeline.Workspace)/di-notebooks'
+                workspaceFolder: '/Shared/devops-ds'
+              displayName: 'Deploy (copy) data processing notebook to the Databricks cluster'             
+  - deployment: "Deploy_to_ADF"
+    displayName: 'Deploy to ADF'
+    timeoutInMinutes: 0
+    environment: qa
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: AzureResourceGroupDeployment@2
+              displayName: 'Deploy ADF resources'
+              inputs:
+                azureSubscription: $(AZURE_RM_CONNECTION)
+                resourceGroupName: $(RESOURCE_GROUP)
+                location: $(LOCATION)
+                csmFile: '$(Pipeline.Workspace)/adf-pipelines/ARMTemplateForFactory.json'
+                csmParametersFile: '$(Pipeline.Workspace)/adf-pipelines/ARMTemplateParametersForFactory.json'
+                overrideParameters: -data-ingestion-pipeline_properties_variables_data_file_name_defaultValue "$(DATA_FILE_NAME)"
+  - job: "Integration_test_job"
+    displayName: "Integration test job"
+    dependsOn: [Deploy_to_Databricks, Deploy_to_ADF]
+    pool:
+      vmImage: 'ubuntu-latest'
+    timeoutInMinutes: 0
+    steps:
+    - task: AzurePowerShell@4
+      displayName: 'Execute ADF Pipeline'
+      inputs:
+        azureSubscription: $(AZURE_RM_CONNECTION)
+        ScriptPath: '$(Build.SourcesDirectory)/adf/utils/Invoke-ADFPipeline.ps1'
+        ScriptArguments: '-ResourceGroupName $(RESOURCE_GROUP) -DataFactoryName $(DATA_FACTORY_NAME) -PipelineName $(PIPELINE_NAME)'
+        azurePowerShellVersion: LatestVersion
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x'
+        addToPath: true
+        architecture: 'x64'
+      displayName: 'Use Python3'
+
+    - task: configuredatabricks@0
+      inputs:
+        url: '$(DATABRICKS_URL)'
+        token: '$(DATABRICKS_TOKEN)'
+      displayName: 'Configure Databricks CLI'    
+
+    - task: executenotebook@0
+      inputs:
+        notebookPath: '/Shared/devops-ds/test-data-ingestion'
+        existingClusterId: '$(DATABRICKS_CLUSTER_ID)'
+        executionParams: '{"bin_file_name":"$(bin_FILE_NAME)"}'
+      displayName: 'Test data ingestion'
+
+    - task: waitexecution@0
+      displayName: 'Wait until the testing is done'
