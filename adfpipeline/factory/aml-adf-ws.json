@@ -1,0 +1,9 @@
+{
+	"name": "aml-adf-ws",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "887e787d-f12f-4ae8-ab4b-addda5883007",
+		"tenantId": "72f988bf-86f1-41af-91ab-2d7cd011db47"
+	}
+}
