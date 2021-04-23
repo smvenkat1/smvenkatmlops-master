@@ -13,6 +13,8 @@ variables:
   value: '/mnt/'
 - name: STORAGE_ACCOUNT_POSTFIX
   value: 'amlsa'
+- name: $(PIPELINE_NAME)
+  value: 'data-ingestion-pipeline'
 
 stages:
 - stage: CI
